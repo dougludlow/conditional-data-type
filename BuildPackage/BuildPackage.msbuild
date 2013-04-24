@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Package">
+
+  <!-- IMPORTS -->
+  <Import Project="$(MSBuildProjectDirectory)\MSBuildTasks\MSBuild.Community.Tasks.Targets" />
+  <Import Project="$(MSBuildProjectDirectory)\MSBuildTasks\MSBuild.Umbraco.Tasks.Targets" />
+
+  <!-- PROPERTIES -->
+  <PropertyGroup>
+    <VersionMajor>1</VersionMajor>
+    <VersionMinor>0</VersionMinor>
+    <VersionPatch>0</VersionPatch>
+    <VersionSuffix>-beta</VersionSuffix>
+    <ProjectName>Cob.Umb.DataTypes.ConditionalDataType</ProjectName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RootDir>$(MSBuildProjectDirectory)\..\Cob.Umb.DataTypes.ConditionalDataType</RootDir>
+    <BuildDir>$(MSBuildProjectDirectory)\_build</BuildDir>
+    <!--<BuildNuGetDir>$(BuildDir)\_nuget</BuildNuGetDir>-->
+  </PropertyGroup>
+
+  <!-- TARGETS -->
+
+  <!-- CLEAN -->
+  <Target Name="Clean">
+    <RemoveDir Directories="$(BuildDir)" Condition="Exists('$(BuildDir)')" />
+    <MakeDir Directories="$(BuildDir)" />
+  </Target>
+
+  <!-- UPDATE ASSEMBLEY VERSION -->
+  <Target Name="UpdateAssemblyInfo" DependsOnTargets="Clean">
+    <Version VersionFile="$(RootDir)\Properties\BuildVersion.txt" Major="$(VersionMajor)" Minor="$(VersionMinor)" BuildType="Automatic" StartDate="07/25/2012" RevisionType="BuildIncrement">
+      <Output TaskParameter="Major" PropertyName="Major" />
+      <Output TaskParameter="Minor" PropertyName="Minor" />
+      <Output TaskParameter="Build" PropertyName="Build" />
+      <Output TaskParameter="Revision" PropertyName="Revision" />
+    </Version>
+    <AssemblyInfo CodeLanguage="CS"
+      OutputFile="$(RootDir)\Properties\VersionInfo.cs"
+      AssemblyVersion="$(VersionMajor).$(VersionMinor).$(VersionPatch)"
+      AssemblyFileVersion="$(Major).$(Minor).$(Build).$(Revision)"
+      AssemblyInformationalVersion="$(VersionMajor).$(VersionMinor).$(VersionPatch)$(VersionSuffix)"/>
+  </Target>
+
+  <!-- COMPILE -->
+  <Target Name="Compile" DependsOnTargets="UpdateAssemblyInfo">
+    <MSBuild Projects="$(RootDir)\..\Cob.Umb.DataTypes.ConditionalDataType.sln" Properties="Configuration=Release" />
+  </Target>
+
+  <!-- PREPARE FILES -->
+  <Target Name="PrepareFiles" DependsOnTargets="Compile">
+    <ItemGroup>
+      <BinFiles Include="$(RootDir)\bin\Release\$(ProjectName).dll" />
+      <PackageFile Include="$(MSBuildProjectDirectory)\package.xml" />
+    </ItemGroup>
+    <!-- OFFSET TIMESTAMP -->
+    <MSBuild.Umbraco.Tasks.TimestampOffset Files="@(BinFiles)" Offset="-11" />
+    <!-- COPY FOR UMBRACO PACKAGE -->
+    <Copy SourceFiles="@(BinFiles)" DestinationFolder="$(BuildDir)\bin" />
+    <Copy SourceFiles="@(PackageFile)" DestinationFolder="$(BuildDir)" />
+  </Target>
+
+  <!-- MANIFEST FOR UMBRACO PACKAGE -->
+  <Target Name="ManifestUmbraco" DependsOnTargets="PrepareFiles">
+    <ItemGroup>
+      <ManifestFiles Include="$(BuildDir)\**\*" Exclude="$(BuildDir)\package.xml" />
+    </ItemGroup>
+    <ReadLinesFromFile File="$(MSBuildProjectDirectory)\readme.txt">
+      <Output TaskParameter="Lines" ItemName="Readme" />
+    </ReadLinesFromFile>
+    <MSBuild.Umbraco.Tasks.ManifestUpdate ManifestFile="$(BuildDir)\package.xml"
+      WorkingDirectory="$(BuildDir)"
+      MinimumRequiredUmbracoVersion="4.7.2"
+      PackageVersion="$(VersionMajor).$(VersionMinor).$(VersionPatch)$(VersionSuffix)"
+      Readme="@(Readme->'%(Identity)', '%0a%0d')"
+      Files="@(ManifestFiles)" />
+  </Target>
+
+  <!-- PACKAGE -->
+  <Target Name="Package" DependsOnTargets="ManifestUmbraco" Outputs="@(PackageFiles);$(BuildDir);$(MSBuildProjectDirectory)">
+    <ItemGroup>
+      <PackageFiles Include="$(BuildDir)\**\*.*" />
+    </ItemGroup>
+    <MSBuild.Umbraco.Tasks.Package ManifestFile="$(BuildDir)\package.xml"
+      WorkingDirectory="$(BuildDir)"
+      OutputDirectory="$(MSBuildProjectDirectory)"
+      Files="@(PackageFiles)" />
+    <RemoveDir Directories="$(BuildDir)" Condition="Exists('$(BuildDir)')" />
+    <Delete Files="$(RootDir)\..\Cob.Umb.DataTypes.ConditionalDataType.sln.cache" />
+  </Target>
+
+</Project>

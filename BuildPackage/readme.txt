@@ -1,0 +1,1 @@
+﻿A data type shows a property if a conditon is met. The property will be hidden by default. When the trigger value is selected, the property will be shown.
