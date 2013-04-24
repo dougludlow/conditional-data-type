@@ -291,7 +291,7 @@ namespace Cob.Umb.DataTypes.ConditionalDataType
                 writer.Write("</div>");
             }
 
-            string description = "This data type shows a property if a conditon is met. The property will be hidden by default. When the trigger value is selected, the property will be shown.";
+            string description = "This data type shows a property if a condition is met. The property will be hidden by default. When the trigger value is selected, the property will be shown.";
             writer.Write("<div class=\"cdt-description\">");
             writer.AddPrevalueRow("Description:", new Literal() { Text = description });
             writer.Write("</div>");
